@@ -1,0 +1,14 @@
+# File environment berisi password
+.env
+.env.*
+!.env.example
+
+# File lokal dan sementara
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
+
+# File backup database
+*.backup
+*.dump
