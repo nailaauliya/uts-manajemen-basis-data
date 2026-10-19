@@ -1,3 +1,4 @@
+
 -- UTS MANAJEMEN BASIS DATA
 -- NOMOR 4: USER DAN HAK AKSES
 -- Database: uts_mbd
@@ -61,7 +62,7 @@ TO data_engineer;
 
 
 -- 6. PENGATURAN KEPEMILIKAN OBJEK
--- Kepemilikan memungkinkan ALTER dan DROP objek.
+-- Owner dapat melakukan ALTER dan DROP objek.
 
 ALTER SCHEMA "SALAM"
 OWNER TO data_engineer;
@@ -74,7 +75,10 @@ OWNER TO data_engineer;
 
 
 -- 7. DEFAULT PRIVILEGES
--- Untuk objek baru yang dibuat oleh postgres.
+-- Hak akses otomatis pada objek baru.
+
+
+-- 7.1 Objek baru yang dibuat oleh postgres
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE postgres
@@ -106,9 +110,34 @@ GRANT ALL PRIVILEGES
 ON SEQUENCES TO data_engineer;
 
 
+-- 7.2 Objek baru yang dibuat oleh data_engineer
+-- backend_dev mendapat CRUD
+-- bi_dev mendapat SELECT
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE data_engineer
+IN SCHEMA "SALAM"
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO backend_dev;
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE data_engineer
+IN SCHEMA "SALAM"
+GRANT SELECT
+ON TABLES TO bi_dev;
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE data_engineer
+IN SCHEMA "SALAM"
+GRANT USAGE ON SEQUENCES TO backend_dev;
+
+
 -- 8. VERIFIKASI USER
 
-SELECT rolname, rolcanlogin, rolsuper
+SELECT
+    rolname,
+    rolcanlogin,
+    rolsuper
 FROM pg_roles
 WHERE rolname IN (
     'backend_dev',
@@ -120,7 +149,9 @@ ORDER BY rolname;
 
 -- 9. VERIFIKASI HAK AKSES TABEL
 
-SELECT grantee, privilege_type
+SELECT
+    grantee,
+    privilege_type
 FROM information_schema.role_table_grants
 WHERE table_schema = 'SALAM'
   AND table_name = 'mahasiswas'
@@ -139,4 +170,19 @@ SELECT
     pg_get_userbyid(relowner) AS pemilik
 FROM pg_class
 WHERE relnamespace = '"SALAM"'::regnamespace
-  AND relname IN ('mahasiswas', 'vw_mahasiswa_aktif');
+  AND relname IN (
+      'mahasiswas',
+      'vw_mahasiswa_aktif'
+  )
+ORDER BY relname;
+
+
+-- 11. VERIFIKASI DEFAULT PRIVILEGES
+
+SELECT
+    pg_get_userbyid(d.defaclrole) AS pembuat_objek,
+    d.defaclobjtype AS jenis_objek,
+    d.defaclacl AS hak_akses
+FROM pg_default_acl d
+WHERE d.defaclnamespace = '"SALAM"'::regnamespace
+ORDER BY pembuat_objek, jenis_objek;
